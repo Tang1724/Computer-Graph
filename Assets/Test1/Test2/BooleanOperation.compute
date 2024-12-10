@@ -1,0 +1,43 @@
+#pragma kernel BooleanOperation
+
+// 输入的顶点数据
+StructuredBuffer<float3> verticesA; // 物体 A 的顶点
+StructuredBuffer<float3> verticesB; // 物体 B 的顶点
+
+// 输出结果的顶点
+RWStructuredBuffer<float3> resultVertices;
+
+// 布尔操作类型 (0 = Union, 1 = Intersection, 2 = Subtraction)
+int operationType;
+
+[numthreads(64, 1, 1)] // 每个线程组 64 个线程
+void BooleanOperation(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= verticesA.Length) return; // 防止越界
+
+    // 获取当前顶点
+    float3 vertexA = verticesA[id.x];
+    float3 vertexB = id.x < verticesB.Length ? verticesB[id.x] : float3(0, 0, 0); // 防止 B 越界
+
+    // 示例：简单的距离计算
+    float distanceA = length(vertexA); // A 的 SDF（简单距离）
+    float distanceB = length(vertexB); // B 的 SDF（简单距离）
+
+    // 布尔运算逻辑
+    float resultDistance = 0.0;
+    if (operationType == 0) // Union
+    {
+        resultDistance = min(distanceA, distanceB);
+    }
+    else if (operationType == 1) // Intersection
+    {
+        resultDistance = max(distanceA, distanceB);
+    }
+    else if (operationType == 2) // Subtraction
+    {
+        resultDistance = max(distanceA, -distanceB);
+    }
+
+    // 输出结果顶点（这里为演示，仅根据距离计算结果顶点位置）
+    resultVertices[id.x] = normalize(vertexA) * resultDistance;
+}
